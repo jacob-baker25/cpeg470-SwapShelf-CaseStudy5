@@ -3,7 +3,7 @@
 {% block body %}
 <section class="narrow">
   <h1>Profile</h1>
-  <p class="lede">Name and email show up on your listings. The department board flag is optional.</p>
+  <p class="lede">Name and email show up on your listings.</p>
   <form method="post" class="stack">
     {% csrf_token %}
     {{ form.as_p }}

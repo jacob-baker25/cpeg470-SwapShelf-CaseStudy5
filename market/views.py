@@ -1,6 +1,7 @@
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -34,7 +35,7 @@ def listing_new(request):
 
 @login_required
 def listing_edit(request, pk):
-    listing = get_object_or_404(Listing, pk=pk)
+    listing = get_object_or_404(Listing, pk=pk, owner=request.user)
     form = ListingForm(request.POST or None, instance=listing)
     if request.method == "POST" and form.is_valid():
         form.save()
@@ -45,7 +46,7 @@ def listing_edit(request, pk):
 @login_required
 @require_POST
 def listing_sold(request, pk):
-    listing = get_object_or_404(Listing, pk=pk)
+    listing = get_object_or_404(Listing, pk=pk, owner=request.user)
     listing.status = "sold"
     listing.save(update_fields=["status"])
     return redirect("listing_detail", pk=listing.pk)
@@ -54,7 +55,7 @@ def listing_sold(request, pk):
 @login_required
 @require_POST
 def listing_delete(request, pk):
-    listing = get_object_or_404(Listing, pk=pk)
+    listing = get_object_or_404(Listing, pk=pk, owner=request.user)
     listing.status = "removed"
     listing.save(update_fields=["status"])
     return redirect("home")
@@ -71,6 +72,8 @@ def mine(request):
 @login_required
 def thread_detail(request, pk):
     thread = get_object_or_404(Thread.objects.select_related("listing", "buyer", "listing__owner"), pk=pk)
+    if request.user.pk not in (thread.buyer_id, thread.listing.owner_id):
+        raise PermissionDenied
     if request.method == "POST":
         body = (request.POST.get("body") or "").strip()
         if body:
